@@ -192,3 +192,8 @@ dotnet ef database update
 install-package Microsoft.EntityFrameworkCore.InMemory
 install-package EntityFramework
 install-package Microsoft.EntityFrameworkCore
+
+
+dotnet add package Microsoft.EntityFrameworkCore.Sqlite
+dotnet add package Microsoft.EntityFrameworkCore.Tools
+dotnet add package Swashbuckle.AspNetCore
