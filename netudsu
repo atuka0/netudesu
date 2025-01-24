@@ -291,3 +291,32 @@ namespace MyWebApiProject.Controllers
 
 </Project>
 
+
+
+
+
+
+
+
+
+
+
+//tools add packages
+Microsoft.EntityFrameworkCore.Sqlite
+Microsoft.EntityFrameworkCore.Tools
+Swashbuckle.AspNetCore
+
+
+
+
+
+
+
+
+
+
+
+//from terminal run 
+dotnet ef migrations add InitialCreate
+dotnet ef database update
+
