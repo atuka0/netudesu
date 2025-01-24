@@ -1,6 +1,6 @@
-//Program Cs: 
+// 1.Program Cs
 using Microsoft.EntityFrameworkCore;
-using MobileContactApi;
+using MyWebApiProject.Data;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,26 +33,11 @@ app.Run();
 
 
 
-//DatabaseContext.cs
 
-namespace MobileContactApi
-{
-    public class DatabaseContext : DbContext
-    {
-        public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
-
-        public DbSet<MobileContact> MobileContacts { get; set; }
-    }
-}
-
-
-
-
-
-//MobileContact.cs (Model)
+//2.Models/MobileContact.cs
 using System.ComponentModel.DataAnnotations;
 
-namespace MobileContactApi
+namespace MyWebApiProject.Models
 {
     public class MobileContact
     {
@@ -76,10 +61,35 @@ namespace MobileContactApi
 
 
 
-//DataTransferObjects.cs
+
+
+//3.Data/DatabaseContext.cs
+using Microsoft.EntityFrameworkCore;
+using MyWebApiProject.Models;
+
+namespace MyWebApiProject.Data
+{
+    public class DatabaseContext : DbContext
+    {
+        public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
+
+        public DbSet<MobileContact> MobileContacts { get; set; }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+//4.DTOs/AddContactDto.cs
 using System.ComponentModel.DataAnnotations;
 
-namespace MobileContactApi
+namespace MyWebApiProject.DTOs
 {
     public class AddContactDto
     {
@@ -92,7 +102,20 @@ namespace MobileContactApi
         [EmailAddress]
         public string? Email { get; set; }
     }
+}
 
+
+
+
+
+
+
+
+//5. DTOs/UpdateContactDto.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace MyWebApiProject.DTOs
+{
     public class UpdateContactDto
     {
         [Required]
@@ -113,11 +136,16 @@ namespace MobileContactApi
 
 
 
-//MobileContactController.cs
+
+
+//6.Controllers/MobileContactController.cs
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using MyWebApiProject.Data;
+using MyWebApiProject.DTOs;
+using MyWebApiProject.Models;
 
-namespace MobileContactApi.Controllers
+namespace MyWebApiProject.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
@@ -155,6 +183,11 @@ namespace MobileContactApi.Controllers
         [HttpPost]
         public async Task<ActionResult<MobileContact>> AddContact(AddContactDto contactDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var contact = new MobileContact
             {
                 Name = contactDto.Name,
@@ -172,6 +205,11 @@ namespace MobileContactApi.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateContact(int id, UpdateContactDto contactDto)
         {
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
             var contact = await _context.MobileContacts.FindAsync(id);
 
             if (contact == null)
@@ -218,4 +256,38 @@ namespace MobileContactApi.Controllers
     }
 }
 
+
+
+
+//7.appsettings.json
+{
+  "ConnectionStrings": {
+    "MainConnection": "Data Source=mobilecontacts.db"
+  }
+}
+
+
+
+
+
+
+
+
+//8.MyWebApiProject.csproj
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
+  </ItemGroup>
+
+</Project>
 
