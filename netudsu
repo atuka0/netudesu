@@ -187,3 +187,8 @@ public class MobileContactController : ControllerBase
 // Open a terminal and run the following commands to create and apply migrations:
 dotnet ef migrations add InitialCreate
 dotnet ef database update
+
+
+install-package Microsoft.EntityFrameworkCore.InMemory
+install-package EntityFramework
+install-package Microsoft.EntityFrameworkCore
