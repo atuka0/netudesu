@@ -1,6 +1,6 @@
-using Microsoft.AspNetCore.Mvc;
+//Program Cs: 
 using Microsoft.EntityFrameworkCore;
-using System.ComponentModel.DataAnnotations;
+using MobileContactApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -27,173 +27,195 @@ app.MapControllers();
 
 app.Run();
 
-// Database Context
-public class DatabaseContext : DbContext
+
+
+
+
+
+
+//DatabaseContext.cs
+
+namespace MobileContactApi
 {
-    public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
-
-    public DbSet<MobileContact> MobileContacts { get; set; }
-}
-
-// MobileContact Model
-public class MobileContact
-{
-    public int Id { get; set; }
-
-    [Required]
-    public string Name { get; set; }
-
-    [Required]
-    public string PhoneNumber { get; set; }
-
-    [EmailAddress]
-    public string? Email { get; set; }
-}
-
-// Data Transfer Objects (DTOs)
-public class AddContactDto
-{
-    [Required]
-    public string Name { get; set; }
-
-    [Required]
-    public string PhoneNumber { get; set; }
-
-    [EmailAddress]
-    public string? Email { get; set; }
-}
-
-public class UpdateContactDto
-{
-    [Required]
-    public string Name { get; set; }
-
-    [Required]
-    public string PhoneNumber { get; set; }
-
-    [EmailAddress]
-    public string? Email { get; set; }
-}
-
-// MobileContact Controller
-[ApiController]
-[Route("api/[controller]")]
-public class MobileContactController : ControllerBase
-{
-    private readonly DatabaseContext _context;
-
-    public MobileContactController(DatabaseContext context)
+    public class DatabaseContext : DbContext
     {
-        _context = context;
+        public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
+
+        public DbSet<MobileContact> MobileContacts { get; set; }
+    }
+}
+
+
+
+
+
+//MobileContact.cs (Model)
+using System.ComponentModel.DataAnnotations;
+
+namespace MobileContactApi
+{
+    public class MobileContact
+    {
+        public int Id { get; set; }
+
+        [Required]
+        public string Name { get; set; }
+
+        [Required]
+        public string PhoneNumber { get; set; }
+
+        [EmailAddress]
+        public string? Email { get; set; }
+    }
+}
+
+
+
+
+
+
+
+
+//DataTransferObjects.cs
+using System.ComponentModel.DataAnnotations;
+
+namespace MobileContactApi
+{
+    public class AddContactDto
+    {
+        [Required]
+        public string Name { get; set; }
+
+        [Required]
+        public string PhoneNumber { get; set; }
+
+        [EmailAddress]
+        public string? Email { get; set; }
     }
 
-    // GET: api/MobileContact
-    [HttpGet]
-    public async Task<ActionResult<IEnumerable<MobileContact>>> GetAllContacts()
+    public class UpdateContactDto
     {
-        return Ok(await _context.MobileContacts.ToListAsync());
+        [Required]
+        public string Name { get; set; }
+
+        [Required]
+        public string PhoneNumber { get; set; }
+
+        [EmailAddress]
+        public string? Email { get; set; }
     }
+}
 
-    // GET: api/MobileContact/5
-    [HttpGet("{id}")]
-    public async Task<ActionResult<MobileContact>> GetContactById(int id)
+
+
+
+
+
+
+
+//MobileContactController.cs
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+
+namespace MobileContactApi.Controllers
+{
+    [ApiController]
+    [Route("api/[controller]")]
+    public class MobileContactController : ControllerBase
     {
-        var contact = await _context.MobileContacts.FindAsync(id);
+        private readonly DatabaseContext _context;
 
-        if (contact == null)
+        public MobileContactController(DatabaseContext context)
         {
-            return NotFound();
+            _context = context;
         }
 
-        return Ok(contact);
-    }
-
-    // POST: api/MobileContact
-    [HttpPost]
-    public async Task<ActionResult<MobileContact>> AddContact(AddContactDto contactDto)
-    {
-        var contact = new MobileContact
+        // GET: api/MobileContact
+        [HttpGet]
+        public async Task<ActionResult<IEnumerable<MobileContact>>> GetAllContacts()
         {
-            Name = contactDto.Name,
-            PhoneNumber = contactDto.PhoneNumber,
-            Email = contactDto.Email
-        };
-
-        _context.MobileContacts.Add(contact);
-        await _context.SaveChangesAsync();
-
-        return CreatedAtAction(nameof(GetContactById), new { id = contact.Id }, contact);
-    }
-
-    // PUT: api/MobileContact/5
-    [HttpPut("{id}")]
-    public async Task<IActionResult> UpdateContact(int id, UpdateContactDto contactDto)
-    {
-        var contact = await _context.MobileContacts.FindAsync(id);
-
-        if (contact == null)
-        {
-            return NotFound();
+            return Ok(await _context.MobileContacts.ToListAsync());
         }
 
-        contact.Name = contactDto.Name;
-        contact.PhoneNumber = contactDto.PhoneNumber;
-        contact.Email = contactDto.Email;
-
-        await _context.SaveChangesAsync();
-
-        return NoContent();
-    }
-
-    // DELETE: api/MobileContact/5
-    [HttpDelete("{id}")]
-    public async Task<IActionResult> DeleteContact(int id)
-    {
-        var contact = await _context.MobileContacts.FindAsync(id);
-
-        if (contact == null)
+        // GET: api/MobileContact/5
+        [HttpGet("{id}")]
+        public async Task<ActionResult<MobileContact>> GetContactById(int id)
         {
-            return NotFound();
+            var contact = await _context.MobileContacts.FindAsync(id);
+
+            if (contact == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(contact);
         }
 
-        _context.MobileContacts.Remove(contact);
-        await _context.SaveChangesAsync();
+        // POST: api/MobileContact
+        [HttpPost]
+        public async Task<ActionResult<MobileContact>> AddContact(AddContactDto contactDto)
+        {
+            var contact = new MobileContact
+            {
+                Name = contactDto.Name,
+                PhoneNumber = contactDto.PhoneNumber,
+                Email = contactDto.Email
+            };
 
-        return NoContent();
-    }
+            _context.MobileContacts.Add(contact);
+            await _context.SaveChangesAsync();
 
-    // GET: api/MobileContact/search?name=John
-    [HttpGet("search")]
-    public async Task<ActionResult<IEnumerable<MobileContact>>> SearchContactsByName([FromQuery] string name)
-    {
-        var contacts = await _context.MobileContacts
-            .Where(c => c.Name.Contains(name))
-            .ToListAsync();
+            return CreatedAtAction(nameof(GetContactById), new { id = contact.Id }, contact);
+        }
 
-        return Ok(contacts);
+        // PUT: api/MobileContact/5
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateContact(int id, UpdateContactDto contactDto)
+        {
+            var contact = await _context.MobileContacts.FindAsync(id);
+
+            if (contact == null)
+            {
+                return NotFound();
+            }
+
+            contact.Name = contactDto.Name;
+            contact.PhoneNumber = contactDto.PhoneNumber;
+            contact.Email = contactDto.Email;
+
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // DELETE: api/MobileContact/5
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteContact(int id)
+        {
+            var contact = await _context.MobileContacts.FindAsync(id);
+
+            if (contact == null)
+            {
+                return NotFound();
+            }
+
+            _context.MobileContacts.Remove(contact);
+            await _context.SaveChangesAsync();
+
+            return NoContent();
+        }
+
+        // GET: api/MobileContact/search?name=John
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<MobileContact>>> SearchContactsByName([FromQuery] string name)
+        {
+            var contacts = await _context.MobileContacts
+                .Where(c => c.Name.Contains(name))
+                .ToListAsync();
+
+            return Ok(contacts);
+        }
     }
 }
 
 
-
-//Add the following connection string to appsettings.json:
-{
-  "ConnectionStrings": {
-    "MainConnection": "Data Source=mobilecontacts.db"
-  }
-}
-
-
-// Open a terminal and run the following commands to create and apply migrations:
-dotnet ef migrations add InitialCreate
-dotnet ef database update
-
-
-install-package Microsoft.EntityFrameworkCore.InMemory
-install-package EntityFramework
-install-package Microsoft.EntityFrameworkCore
-
-
-dotnet add package Microsoft.EntityFrameworkCore.Sqlite
-dotnet add package Microsoft.EntityFrameworkCore.Tools
-dotnet add package Swashbuckle.AspNetCore
