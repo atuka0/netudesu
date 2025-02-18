@@ -15,7 +15,7 @@ public interface IAuthor
 // Author.cs
 using System;
 using System.Collections.Generic;
-using System.Text.RegularExpressions;
+using System.Linq;
 
 public enum Sex { Male, Female }
 public enum Country { USA, UK, Germany, France, Georgia }
@@ -54,13 +54,13 @@ public class Author : IComparable<Author>
     private string ValidateString(string value, int min, int max)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length < min || value.Length > max)
-            throw new ArgumentException($"must be between {min}-{max} characters.");
+            throw new ArgumentException($"Value must be between {min}-{max} characters.");
         return value;
     }
 
     private string ValidatePersonalID(string id)
     {
-        if (!Regex.IsMatch(id, @"^\d{11}$"))
+        if (id.Length != 11 || !id.All(char.IsDigit))
             throw new ArgumentException("ID უნდა იყოს ზუსტად 11 ციფრი");
         return id;
     }
@@ -74,16 +74,17 @@ public class Author : IComparable<Author>
 
     private string ValidateEmail(string email)
     {
-        if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
             throw new ArgumentException("არასწორი იმეილის ფორმატი");
         return email;
     }
 
     public int CompareTo(Author other) => other.Birthdate.CompareTo(this.Birthdate); // Descending order by age
 }
+
 // Product.cs
 using System;
-using System.Text.RegularExpressions;
+using System.Linq;
 
 public enum ProductType { Book, Article, Blog }
 public enum Publishing { OxfordPress, CambridgePress, SelfPublished }
@@ -123,11 +124,12 @@ public class Product
 
     private string ValidateISBN(string isbn)
     {
-        if (!Regex.IsMatch(isbn, @"^\d{13}$"))
+        if (isbn.Length != 13 || !isbn.All(char.IsDigit))
             throw new ArgumentException("ISBN must be exactly 13 digits.");
         return isbn;
     }
 }
+
 // ProductComparer.cs
 using System.Collections.Generic;
 
