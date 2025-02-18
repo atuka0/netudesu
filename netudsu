@@ -144,36 +144,93 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-public class PressHouse
+public class PressHouse : IAuthor
 {
     private List<Author> authors = new List<Author>();
     private List<Product> products = new List<Product>();
 
     public void AddAuthor(Author author) => authors.Add(author);
-    public void AddProduct(Product product) => products.Add(product);
 
-    public List<Product> GetProductsByDateRange(DateTime start, DateTime end)
+    public void EditAuthor(Guid authorId, Author updatedAuthor)
     {
-        return products.Where(p => p.ReleaseDate >= start && p.ReleaseDate <= end).ToList();
-    }
-
-    public List<Product> GetTopMProducts(int m)
-    {
-        return products.OrderByDescending(p => p.PageAmount).Take(m).ToList();
-    }
-
-    public Dictionary<ProductType, int> GetYearlyReport(int year)
-    {
-        var report = new Dictionary<ProductType, int> { { ProductType.Book, 0 }, { ProductType.Article, 0 }, { ProductType.Blog, 0 } };
-
-        foreach (var product in products.Where(p => p.ReleaseDate.Year == year))
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        if (author != null)
         {
-            report[product.Type]++;
+            author.Name = updatedAuthor.Name;
+            author.Surname = updatedAuthor.Surname;
+            author.Gender = updatedAuthor.Gender;
+            author.PersonalID = updatedAuthor.PersonalID;
+            author.Birthdate = updatedAuthor.Birthdate;
+            author.Country = updatedAuthor.Country;
+            author.City = updatedAuthor.City;
+            author.PhoneNumber = updatedAuthor.PhoneNumber;
+            author.Email = updatedAuthor.Email;
+            author.Products = updatedAuthor.Products;
         }
+        else
+        {
+            throw new ArgumentException("Author not found.");
+        }
+    }
 
-        return report;
+    public void DeleteAuthor(Guid authorId)
+    {
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        if (author != null)
+        {
+            authors.Remove(author);
+        }
+        else
+        {
+            throw new ArgumentException("Author not found.");
+        }
+    }
+
+    public void AddProductToAuthor(Guid authorId, Product product)
+    {
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        if (author != null)
+        {
+            author.Products.Add(product);
+        }
+        else
+        {
+            throw new ArgumentException("Author not found.");
+        }
+    }
+
+    public void RemoveProductFromAuthor(Guid authorId, Guid productId)
+    {
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        if (author != null)
+        {
+            var product = author.Products.FirstOrDefault(p => p.Id == productId);
+            if (product != null)
+            {
+                author.Products.Remove(product);
+            }
+            else
+            {
+                throw new ArgumentException("Product not found.");
+            }
+        }
+        else
+        {
+            throw new ArgumentException("Author not found.");
+        }
+    }
+
+    public Author GetAuthorInfo(Guid authorId)
+    {
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        if (author == null)
+        {
+            throw new ArgumentException("Author not found.");
+        }
+        return author;
     }
 }
+
 // Program.cs
 using System;
 
