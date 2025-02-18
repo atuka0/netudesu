@@ -142,18 +142,29 @@ public class ProductComparer : IComparer<Product>
 // PressHouse.cs
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public class PressHouse : IAuthor
 {
     private List<Author> authors = new List<Author>();
     private List<Product> products = new List<Product>();
 
-    public void AddAuthor(Author author) => authors.Add(author);
-    
+    public void AddAuthor(Author author)
+    {
+        authors.Add(author);
+    }
+
     public void EditAuthor(Guid authorId, Author updatedAuthor)
     {
-        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        Author author = null;
+        foreach (var a in authors)
+        {
+            if (a.Id == authorId)
+            {
+                author = a;
+                break;
+            }
+        }
+
         if (author != null)
         {
             author.Name = updatedAuthor.Name;
@@ -169,91 +180,153 @@ public class PressHouse : IAuthor
         }
         else
         {
-            throw new ArgumentException("Author not found.");
+            Console.WriteLine("Author not found.");
         }
     }
 
     public void DeleteAuthor(Guid authorId)
     {
-        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        Author author = null;
+        foreach (var a in authors)
+        {
+            if (a.Id == authorId)
+            {
+                author = a;
+                break;
+            }
+        }
+
         if (author != null)
         {
             authors.Remove(author);
         }
         else
         {
-            throw new ArgumentException("Author not found.");
+            Console.WriteLine("Author not found.");
         }
     }
 
     public void AddProductToAuthor(Guid authorId, Product product)
     {
-        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        Author author = null;
+        foreach (var a in authors)
+        {
+            if (a.Id == authorId)
+            {
+                author = a;
+                break;
+            }
+        }
+
         if (author != null)
         {
             author.Products.Add(product);
         }
         else
         {
-            throw new ArgumentException("Author not found.");
+            Console.WriteLine("Author not found.");
         }
     }
 
     public void RemoveProductFromAuthor(Guid authorId, Guid productId)
     {
-        var author = authors.FirstOrDefault(a => a.Id == authorId);
+        Author author = null;
+        foreach (var a in authors)
+        {
+            if (a.Id == authorId)
+            {
+                author = a;
+                break;
+            }
+        }
+
         if (author != null)
         {
-            var product = author.Products.FirstOrDefault(p => p.Id == productId);
+            Product product = null;
+            foreach (var p in author.Products)
+            {
+                if (p.Id == productId)
+                {
+                    product = p;
+                    break;
+                }
+            }
+
             if (product != null)
             {
                 author.Products.Remove(product);
             }
             else
             {
-                throw new ArgumentException("Product not found.");
+                Console.WriteLine("Product not found.");
             }
         }
         else
         {
-            throw new ArgumentException("Author not found.");
+            Console.WriteLine("Author not found.");
         }
     }
 
     public Author GetAuthorInfo(Guid authorId)
     {
-        var author = authors.FirstOrDefault(a => a.Id == authorId);
-        if (author == null)
+        foreach (var author in authors)
         {
-            throw new ArgumentException("Author not found.");
+            if (author.Id == authorId)
+            {
+                return author;
+            }
         }
-        return author;
+
+        Console.WriteLine("Author not found.");
+        return null;
     }
 
-    public void AddProduct(Product product) => products.Add(product);
+    public void AddProduct(Product product)
+    {
+        products.Add(product);
+    }
 
     public List<Product> GetProductsByDateRange(DateTime start, DateTime end)
     {
-        return products.Where(p => p.ReleaseDate >= start && p.ReleaseDate <= end).ToList();
+        List<Product> result = new List<Product>();
+        foreach (var p in products)
+        {
+            if (p.ReleaseDate >= start && p.ReleaseDate <= end)
+            {
+                result.Add(p);
+            }
+        }
+        return result;
     }
 
     public List<Product> GetTopMProducts(int m)
     {
-        return products.OrderByDescending(p => p.PageAmount).Take(m).ToList();
+        List<Product> sortedProducts = new List<Product>(products);
+        sortedProducts.Sort((x, y) => x.PageAmount.CompareTo(y.PageAmount));
+        return sortedProducts.GetRange(0, Math.Min(m, sortedProducts.Count));
     }
 
     public Dictionary<ProductType, int> GetYearlyReport(int year)
     {
-        var report = new Dictionary<ProductType, int> { { ProductType.Book, 0 }, { ProductType.Article, 0 }, { ProductType.Blog, 0 } };
-
-        foreach (var product in products.Where(p => p.ReleaseDate.Year == year))
+        var report = new Dictionary<ProductType, int>
         {
-            report[product.Type]++;
+            { ProductType.Book, 0 },
+            { ProductType.Article, 0 },
+            { ProductType.Blog, 0 }
+        };
+
+        foreach (var product in products)
+        {
+            if (product.ReleaseDate.Year == year)
+            {
+                report[product.Type]++;
+            }
         }
 
         return report;
     }
 }
+
 
 
 // Program.cs
