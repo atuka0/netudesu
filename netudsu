@@ -1,6 +1,7 @@
 // IAuthor.cs
 using System;
 using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
 public interface IAuthor
 {
@@ -11,14 +12,14 @@ public interface IAuthor
     void RemoveProductFromAuthor(Guid authorId, Guid productId);
     Author GetAuthorInfo(Guid authorId);
 }
+
 // Author.cs
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 public enum Sex { Male, Female }
 public enum Country { USA, UK, Germany, France, Georgia }
-public enum City { Tbilisi, London, Berlin, Paris, NewYork }
+public enum City { Tbilisi, London, Berlin, Paris, New York }
 
 public class Author : IComparable<Author>
 {
@@ -53,37 +54,41 @@ public class Author : IComparable<Author>
     private string ValidateString(string value, int min, int max)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length < min || value.Length > max)
-            throw new ArgumentException($"Value must be between {min}-{max} characters.");
+            throw new ArgumentException($"Must be between {min} and {max} characters.");
         return value;
     }
 
     private string ValidatePersonalID(string id)
     {
+        // Validate that the Personal ID is exactly 11 digits long
         if (id.Length != 11 || !id.All(char.IsDigit))
-            throw new ArgumentException("ID უნდა იყოს ზუსტად 11 ციფრი");
+            throw new ArgumentException("ID must be exactly 11 digits.");
         return id;
     }
 
     private DateTime ValidateAge(DateTime birthdate)
     {
         if ((DateTime.Now - birthdate).TotalDays / 365 < 18)
-            throw new ArgumentException("ავტორი უნდა იყოს მინიმუმ 18 წლის");
+            throw new ArgumentException("Author must be at least 18 years old.");
         return birthdate;
     }
 
     private string ValidateEmail(string email)
     {
-        if (string.IsNullOrWhiteSpace(email) || !email.Contains('@') || !email.Contains('.'))
-            throw new ArgumentException("არასწორი იმეილის ფორმატი");
+        // Basic email validation: must have "@" and "."
+        if (string.IsNullOrWhiteSpace(email) || !email.Contains("@") || !email.Contains("."))
+            throw new ArgumentException("Invalid email format.");
         return email;
     }
 
-    public int CompareTo(Author other) => other.Birthdate.CompareTo(this.Birthdate); // Descending order by age
+    public int CompareTo(Author other) => other.Birthdate.CompareTo(this.Birthdate); // Sort by age
+}
+
 }
 
 // Product.cs
 using System;
-using System.Linq;
+using System.Collections.Generic;
 
 public enum ProductType { Book, Article, Blog }
 public enum Publishing { OxfordPress, CambridgePress, SelfPublished }
@@ -99,6 +104,7 @@ public class Product
     public Publishing Publisher { get; set; }
     public int PageAmount { get; set; }
     public string Address { get; set; }
+    public List<Author> Authors { get; set; }
 
     public Product(string title, string anotation, ProductType type, string isbn, DateTime releaseDate,
                    Publishing publisher, int pageAmount, string address)
@@ -112,22 +118,25 @@ public class Product
         Publisher = publisher;
         PageAmount = pageAmount;
         Address = address;
+        Authors = new List<Author>();
     }
 
     private string ValidateString(string value, int min, int max)
     {
         if (string.IsNullOrWhiteSpace(value) || value.Length < min || value.Length > max)
-            throw new ArgumentException($"Value must be between {min}-{max} characters.");
+            throw new ArgumentException($"Must be between {min} and {max} characters.");
         return value;
     }
 
     private string ValidateISBN(string isbn)
     {
+        // Validate that the ISBN is exactly 13 digits long
         if (isbn.Length != 13 || !isbn.All(char.IsDigit))
             throw new ArgumentException("ISBN must be exactly 13 digits.");
         return isbn;
     }
 }
+
 
 // ProductComparer.cs
 using System.Collections.Generic;
@@ -136,174 +145,79 @@ public class ProductComparer : IComparer<Product>
 {
     public int Compare(Product x, Product y)
     {
-        return x.PageAmount.CompareTo(y.PageAmount); // Ascending order by page amount
+        return x.PageAmount.CompareTo(y.PageAmount); // Sort by page count
     }
 }
+
 // PressHouse.cs
 using System;
 using System.Collections.Generic;
+using System.Linq;
 
 public class PressHouse : IAuthor
 {
     private List<Author> authors = new List<Author>();
     private List<Product> products = new List<Product>();
 
-    public void AddAuthor(Author author)
-    {
-        authors.Add(author);
-    }
+    public void AddAuthor(Author author) => authors.Add(author);
+    public void AddProduct(Product product) => products.Add(product);
 
     public void EditAuthor(Guid authorId, Author updatedAuthor)
     {
-        Author author = null;
-        foreach (var a in authors)
-        {
-            if (a.Id == authorId)
-            {
-                author = a;
-                break;
-            }
-        }
-
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
         if (author != null)
         {
             author.Name = updatedAuthor.Name;
             author.Surname = updatedAuthor.Surname;
-            author.Gender = updatedAuthor.Gender;
-            author.PersonalID = updatedAuthor.PersonalID;
-            author.Birthdate = updatedAuthor.Birthdate;
-            author.Country = updatedAuthor.Country;
-            author.City = updatedAuthor.City;
-            author.PhoneNumber = updatedAuthor.PhoneNumber;
-            author.Email = updatedAuthor.Email;
-            author.Products = updatedAuthor.Products;
-        }
-        else
-        {
-            Console.WriteLine("Author not found.");
         }
     }
 
     public void DeleteAuthor(Guid authorId)
     {
-        Author author = null;
-        foreach (var a in authors)
-        {
-            if (a.Id == authorId)
-            {
-                author = a;
-                break;
-            }
-        }
-
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
         if (author != null)
         {
             authors.Remove(author);
-        }
-        else
-        {
-            Console.WriteLine("Author not found.");
         }
     }
 
     public void AddProductToAuthor(Guid authorId, Product product)
     {
-        Author author = null;
-        foreach (var a in authors)
-        {
-            if (a.Id == authorId)
-            {
-                author = a;
-                break;
-            }
-        }
-
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
         if (author != null)
         {
             author.Products.Add(product);
-        }
-        else
-        {
-            Console.WriteLine("Author not found.");
+            product.Authors.Add(author);
         }
     }
 
     public void RemoveProductFromAuthor(Guid authorId, Guid productId)
     {
-        Author author = null;
-        foreach (var a in authors)
-        {
-            if (a.Id == authorId)
-            {
-                author = a;
-                break;
-            }
-        }
-
+        var author = authors.FirstOrDefault(a => a.Id == authorId);
         if (author != null)
         {
-            Product product = null;
-            foreach (var p in author.Products)
-            {
-                if (p.Id == productId)
-                {
-                    product = p;
-                    break;
-                }
-            }
-
+            var product = author.Products.FirstOrDefault(p => p.Id == productId);
             if (product != null)
             {
                 author.Products.Remove(product);
+                product.Authors.Remove(author);
             }
-            else
-            {
-                Console.WriteLine("Product not found.");
-            }
-        }
-        else
-        {
-            Console.WriteLine("Author not found.");
         }
     }
 
     public Author GetAuthorInfo(Guid authorId)
     {
-        foreach (var author in authors)
-        {
-            if (author.Id == authorId)
-            {
-                return author;
-            }
-        }
-
-        Console.WriteLine("Author not found.");
-        return null;
-    }
-
-    public void AddProduct(Product product)
-    {
-        products.Add(product);
+        return authors.FirstOrDefault(a => a.Id == authorId);
     }
 
     public List<Product> GetProductsByDateRange(DateTime start, DateTime end)
     {
-        List<Product> result = new List<Product>();
-        foreach (var p in products)
-        {
-            if (p.ReleaseDate >= start && p.ReleaseDate <= end)
-            {
-                result.Add(p);
-            }
-        }
-        return result;
+        return products.Where(p => p.ReleaseDate >= start && p.ReleaseDate <= end).ToList();
     }
 
     public List<Product> GetTopMProducts(int m)
     {
-        List<Product> sortedProducts = new List<Product>(products);
-        sortedProducts.Sort((x, y) => x.PageAmount.CompareTo(y.PageAmount));
-        return sortedProducts.GetRange(0, Math.Min(m, sortedProducts.Count));
+        return products.OrderByDescending(p => p.PageAmount).Take(m).ToList();
     }
 
     public Dictionary<ProductType, int> GetYearlyReport(int year)
@@ -315,20 +229,14 @@ public class PressHouse : IAuthor
             { ProductType.Blog, 0 }
         };
 
-        foreach (var product in products)
+        foreach (var product in products.Where(p => p.ReleaseDate.Year == year))
         {
-            if (product.ReleaseDate.Year == year)
-            {
-                report[product.Type]++;
-            }
+            report[product.Type]++;
         }
 
         return report;
     }
 }
-
-
-
 // Program.cs
 using System;
 
@@ -339,10 +247,10 @@ class Program
         PressHouse pressHouse = new PressHouse();
 
         Author author1 = new Author("Giorgi", "Mikautadze", Sex.Male, "12345678901", new DateTime(1985, 5, 10), "Georgia", "Tbilisi", "12345678", "giorgi.mikautadze@example.com");
-        Product book1 = new Product("Scoring", "A book about Scoring Goals", ProductType.Book, "1234567890123", new DateTime(2025, 5, 10), Publishing.OxfordPress, 500, "Library A");
+        Product book1 = new Product("Scoring", "A book about scoring goals", ProductType.Book, "1234567890123", new DateTime(2025, 5, 10), Publishing.OxfordPress, 500, "Library A");
 
         Author author2 = new Author("Lana", "Del Rey", Sex.Female, "98765432109", new DateTime(1990, 8, 15), "UK", "London", "98765432", "lana.delrey@example.com");
-        Product book2 = new Product("Singing", "A how to sing tutorial", ProductType.Book, "9876543210123", new DateTime(2025, 7, 20), Publishing.CambridgePress, 300, "Library B");
+        Product book2 = new Product("Singing", "A how-to sing tutorial", ProductType.Book, "9876543210123", new DateTime(2025, 7, 20), Publishing.CambridgePress, 300, "Library B");
 
         pressHouse.AddAuthor(author1);
         pressHouse.AddProduct(book1);
@@ -355,6 +263,7 @@ class Program
         {
             Console.WriteLine($"Title: {p.Title}, Pages: {p.PageAmount}");
         }
+
         Console.WriteLine("\nYearly Report for 2025:");
         var report = pressHouse.GetYearlyReport(2025);
         foreach (var item in report)
