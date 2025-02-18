@@ -150,7 +150,7 @@ public class PressHouse : IAuthor
     private List<Product> products = new List<Product>();
 
     public void AddAuthor(Author author) => authors.Add(author);
-
+    
     public void EditAuthor(Guid authorId, Author updatedAuthor)
     {
         var author = authors.FirstOrDefault(a => a.Id == authorId);
@@ -229,7 +229,32 @@ public class PressHouse : IAuthor
         }
         return author;
     }
+
+    public void AddProduct(Product product) => products.Add(product);
+
+    public List<Product> GetProductsByDateRange(DateTime start, DateTime end)
+    {
+        return products.Where(p => p.ReleaseDate >= start && p.ReleaseDate <= end).ToList();
+    }
+
+    public List<Product> GetTopMProducts(int m)
+    {
+        return products.OrderByDescending(p => p.PageAmount).Take(m).ToList();
+    }
+
+    public Dictionary<ProductType, int> GetYearlyReport(int year)
+    {
+        var report = new Dictionary<ProductType, int> { { ProductType.Book, 0 }, { ProductType.Article, 0 }, { ProductType.Blog, 0 } };
+
+        foreach (var product in products.Where(p => p.ReleaseDate.Year == year))
+        {
+            report[product.Type]++;
+        }
+
+        return report;
+    }
 }
+
 
 // Program.cs
 using System;
