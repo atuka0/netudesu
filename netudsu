@@ -1,322 +1,209 @@
-// 1.Program Cs
-using Microsoft.EntityFrameworkCore;
-using MyWebApiProject.Data;
+// IAuthor.cs
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
-var builder = WebApplication.CreateBuilder(args);
-
-// Add services to the container.
-builder.Services.AddDbContext<DatabaseContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("MainConnection")));
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-
-var app = builder.Build();
-
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+public interface IAuthor
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    void AddAuthor(Author author);
+    void EditAuthor(Guid authorId, Author updatedAuthor);
+    void DeleteAuthor(Guid authorId);
+    void AddProductToAuthor(Guid authorId, Product product);
+    void RemoveProductFromAuthor(Guid authorId, Guid productId);
+    Author GetAuthorInfo(Guid authorId);
 }
+// Author.cs
+using System;
+using System.Collections.Generic;
+using System.Text.RegularExpressions;
 
-app.UseAuthorization();
+public enum Sex { Male, Female }
+public enum Country { USA, UK, Germany, France, Georgia }
+public enum City { Tbilisi, London, Berlin, Paris, NewYork }
 
-app.MapControllers();
-
-app.Run();
-
-
-
-
-
-
-
-
-//2.Models/MobileContact.cs
-using System.ComponentModel.DataAnnotations;
-
-namespace MyWebApiProject.Models
+public class Author : IComparable<Author>
 {
-    public class MobileContact
+    public Guid Id { get; private set; }
+    public string Name { get; set; }
+    public string Surname { get; set; }
+    public Sex Gender { get; set; }
+    public string PersonalID { get; set; }
+    public DateTime Birthdate { get; set; }
+    public Country Country { get; set; }
+    public City City { get; set; }
+    public string PhoneNumber { get; set; }
+    public string Email { get; set; }
+    public List<Product> Products { get; set; }
+
+    public Author(string name, string surname, Sex gender, string personalId, DateTime birthdate,
+                  Country country, City city, string phoneNumber, string email)
     {
-        public int Id { get; set; }
+        Id = Guid.NewGuid();
+        Name = ValidateString(name, 2, 50);
+        Surname = ValidateString(surname, 2, 50);
+        Gender = gender;
+        PersonalID = ValidatePersonalID(personalId);
+        Birthdate = ValidateAge(birthdate);
+        Country = country;
+        City = city;
+        PhoneNumber = ValidateString(phoneNumber, 4, 50);
+        Email = ValidateEmail(email);
+        Products = new List<Product>();
+    }
 
-        [Required]
-        public string Name { get; set; }
+    private string ValidateString(string value, int min, int max)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length < min || value.Length > max)
+            throw new ArgumentException($"must be between {min}-{max} characters.");
+        return value;
+    }
 
-        [Required]
-        public string PhoneNumber { get; set; }
+    private string ValidatePersonalID(string id)
+    {
+        if (!Regex.IsMatch(id, @"^\d{11}$"))
+            throw new ArgumentException("ID უნდა იყოს ზუსტად 11 ციფრი");
+        return id;
+    }
 
-        [EmailAddress]
-        public string? Email { get; set; }
+    private DateTime ValidateAge(DateTime birthdate)
+    {
+        if ((DateTime.Now - birthdate).TotalDays / 365 < 18)
+            throw new ArgumentException("ავტორი უნდა იყოს მინიმუმ 18 წლის");
+        return birthdate;
+    }
+
+    private string ValidateEmail(string email)
+    {
+        if (!Regex.IsMatch(email, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+            throw new ArgumentException("არასწორი იმეილის ფორმატი");
+        return email;
+    }
+
+    public int CompareTo(Author other) => other.Birthdate.CompareTo(this.Birthdate); // Descending order by age
+}
+// Product.cs
+using System;
+using System.Text.RegularExpressions;
+
+public enum ProductType { Book, Article, Blog }
+public enum Publishing { OxfordPress, CambridgePress, SelfPublished }
+
+public class Product
+{
+    public Guid Id { get; private set; }
+    public string Title { get; set; }
+    public string Anotation { get; set; }
+    public ProductType Type { get; set; }
+    public string ISBN { get; set; }
+    public DateTime ReleaseDate { get; set; }
+    public Publishing Publisher { get; set; }
+    public int PageAmount { get; set; }
+    public string Address { get; set; }
+
+    public Product(string title, string anotation, ProductType type, string isbn, DateTime releaseDate,
+                   Publishing publisher, int pageAmount, string address)
+    {
+        Id = Guid.NewGuid();
+        Title = ValidateString(title, 2, 250);
+        Anotation = ValidateString(anotation, 100, 250);
+        Type = type;
+        ISBN = ValidateISBN(isbn);
+        ReleaseDate = releaseDate;
+        Publisher = publisher;
+        PageAmount = pageAmount;
+        Address = address;
+    }
+
+    private string ValidateString(string value, int min, int max)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length < min || value.Length > max)
+            throw new ArgumentException($"Value must be between {min}-{max} characters.");
+        return value;
+    }
+
+    private string ValidateISBN(string isbn)
+    {
+        if (!Regex.IsMatch(isbn, @"^\d{13}$"))
+            throw new ArgumentException("ISBN must be exactly 13 digits.");
+        return isbn;
     }
 }
+// ProductComparer.cs
+using System.Collections.Generic;
 
-
-
-
-
-
-
-
-
-
-//3.Data/DatabaseContext.cs
-using Microsoft.EntityFrameworkCore;
-using MyWebApiProject.Models;
-
-namespace MyWebApiProject.Data
+public class ProductComparer : IComparer<Product>
 {
-    public class DatabaseContext : DbContext
+    public int Compare(Product x, Product y)
     {
-        public DatabaseContext(DbContextOptions<DatabaseContext> options) : base(options) { }
-
-        public DbSet<MobileContact> MobileContacts { get; set; }
+        return x.PageAmount.CompareTo(y.PageAmount); // Ascending order by page amount
     }
 }
+// PressHouse.cs
+using System;
+using System.Collections.Generic;
+using System.Linq;
 
-
-
-
-
-
-
-
-
-
-//4.DTOs/AddContactDto.cs
-using System.ComponentModel.DataAnnotations;
-
-namespace MyWebApiProject.DTOs
+public class PressHouse
 {
-    public class AddContactDto
+    private List<Author> authors = new List<Author>();
+    private List<Product> products = new List<Product>();
+
+    public void AddAuthor(Author author) => authors.Add(author);
+    public void AddProduct(Product product) => products.Add(product);
+
+    public List<Product> GetProductsByDateRange(DateTime start, DateTime end)
     {
-        [Required]
-        public string Name { get; set; }
+        return products.Where(p => p.ReleaseDate >= start && p.ReleaseDate <= end).ToList();
+    }
 
-        [Required]
-        public string PhoneNumber { get; set; }
+    public List<Product> GetTopMProducts(int m)
+    {
+        return products.OrderByDescending(p => p.PageAmount).Take(m).ToList();
+    }
 
-        [EmailAddress]
-        public string? Email { get; set; }
+    public Dictionary<ProductType, int> GetYearlyReport(int year)
+    {
+        var report = new Dictionary<ProductType, int> { { ProductType.Book, 0 }, { ProductType.Article, 0 }, { ProductType.Blog, 0 } };
+
+        foreach (var product in products.Where(p => p.ReleaseDate.Year == year))
+        {
+            report[product.Type]++;
+        }
+
+        return report;
     }
 }
+// Program.cs
+using System;
 
-
-
-
-
-
-
-
-//5. DTOs/UpdateContactDto.cs
-using System.ComponentModel.DataAnnotations;
-
-namespace MyWebApiProject.DTOs
+class Program
 {
-    public class UpdateContactDto
+    static void Main()
     {
-        [Required]
-        public string Name { get; set; }
+        PressHouse pressHouse = new PressHouse();
 
-        [Required]
-        public string PhoneNumber { get; set; }
+        Author author1 = new Author("Giorgi", "Mikautadze", Sex.Male, "12345678901", new DateTime(1985, 5, 10), Country.Georgia, City.Tbilisi, "12345678", "giorgi.mikautadze@example.com");
+        Product book1 = new Product("Scoring", "A book about Scoring Goals", ProductType.Book, "1234567890123", new DateTime(2025, 5, 10), Publishing.OxfordPress, 500, "Library A");
 
-        [EmailAddress]
-        public string? Email { get; set; }
-    }
-}
+        Author author2 = new Author("Lana", "Del Rey", Sex.Female, "98765432109", new DateTime(1990, 8, 15), Country.UK, City.London, "98765432", "lana.delrey@example.com");
+        Product book2 = new Product("Singing", "A how to sing tutorial", ProductType.Book, "9876543210123", new DateTime(2025, 7, 20), Publishing.CambridgePress, 300, "Library B");
 
+        pressHouse.AddAuthor(author1);
+        pressHouse.AddProduct(book1);
 
+        pressHouse.AddAuthor(author2);
+        pressHouse.AddProduct(book2);
 
-
-
-
-
-
-
-
-//6.Controllers/MobileContactController.cs
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using MyWebApiProject.Data;
-using MyWebApiProject.DTOs;
-using MyWebApiProject.Models;
-
-namespace MyWebApiProject.Controllers
-{
-    [ApiController]
-    [Route("api/[controller]")]
-    public class MobileContactController : ControllerBase
-    {
-        private readonly DatabaseContext _context;
-
-        public MobileContactController(DatabaseContext context)
+        Console.WriteLine("Top 1 product:");
+        foreach (var p in pressHouse.GetTopMProducts(1))
         {
-            _context = context;
+            Console.WriteLine($"Title: {p.Title}, Pages: {p.PageAmount}");
         }
-
-        // GET: api/MobileContact
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<MobileContact>>> GetAllContacts()
+        Console.WriteLine("\nYearly Report for 2025:");
+        var report = pressHouse.GetYearlyReport(2025);
+        foreach (var item in report)
         {
-            return Ok(await _context.MobileContacts.ToListAsync());
-        }
-
-        // GET: api/MobileContact/5
-        [HttpGet("{id}")]
-        public async Task<ActionResult<MobileContact>> GetContactById(int id)
-        {
-            var contact = await _context.MobileContacts.FindAsync(id);
-
-            if (contact == null)
-            {
-                return NotFound();
-            }
-
-            return Ok(contact);
-        }
-
-        // POST: api/MobileContact
-        [HttpPost]
-        public async Task<ActionResult<MobileContact>> AddContact(AddContactDto contactDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var contact = new MobileContact
-            {
-                Name = contactDto.Name,
-                PhoneNumber = contactDto.PhoneNumber,
-                Email = contactDto.Email
-            };
-
-            _context.MobileContacts.Add(contact);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(nameof(GetContactById), new { id = contact.Id }, contact);
-        }
-
-        // PUT: api/MobileContact/5
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateContact(int id, UpdateContactDto contactDto)
-        {
-            if (!ModelState.IsValid)
-            {
-                return BadRequest(ModelState);
-            }
-
-            var contact = await _context.MobileContacts.FindAsync(id);
-
-            if (contact == null)
-            {
-                return NotFound();
-            }
-
-            contact.Name = contactDto.Name;
-            contact.PhoneNumber = contactDto.PhoneNumber;
-            contact.Email = contactDto.Email;
-
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // DELETE: api/MobileContact/5
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteContact(int id)
-        {
-            var contact = await _context.MobileContacts.FindAsync(id);
-
-            if (contact == null)
-            {
-                return NotFound();
-            }
-
-            _context.MobileContacts.Remove(contact);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        // GET: api/MobileContact/search?name=John
-        [HttpGet("search")]
-        public async Task<ActionResult<IEnumerable<MobileContact>>> SearchContactsByName([FromQuery] string name)
-        {
-            var contacts = await _context.MobileContacts
-                .Where(c => c.Name.Contains(name))
-                .ToListAsync();
-
-            return Ok(contacts);
+            Console.WriteLine($"{item.Key}: {item.Value}");
         }
     }
 }
-
-
-
-
-//7.appsettings.json
-{
-  "ConnectionStrings": {
-    "MainConnection": "Data Source=mobilecontacts.db"
-  }
-}
-
-
-
-
-
-
-
-
-//8.MyWebApiProject.csproj
-<Project Sdk="Microsoft.NET.Sdk.Web">
-
-  <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
-  </ItemGroup>
-
-</Project>
-
-
-
-
-
-
-
-
-
-
-
-//tools add packages
-Microsoft.EntityFrameworkCore.Sqlite
-Microsoft.EntityFrameworkCore.Tools
-Swashbuckle.AspNetCore
-
-
-
-
-
-
-
-
-
-
-
-//from terminal run 
-dotnet ef migrations add InitialCreate
-dotnet ef database update
-
